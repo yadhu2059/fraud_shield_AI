@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraud Shield AI — Real-Time Financial Protection Dashboard</title>
+    <meta name="description" content="State-of-the-art hybrid real-time fraud prevention engine using GNNs, ONNX ensemble models, and SHAP explainability.">
+    <!-- Google Fonts Outfit & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-shield"></div>
+                <div class="logo-text">
+                    <h1>FRAUD SHIELD <span class="accent-text">AI</span></h1>
+                    <p class="subtitle">REAL-TIME RISK DEFENSE ENGINE</p>
+                </div>
+            </div>
+            <div class="system-status">
+                <span class="status-indicator online"></span>
+                <span class="status-label">FAST-LANE ONNX: ONLINE (sub-10ms)</span>
+                <span class="status-divider">|</span>
+                <span class="status-indicator online"></span>
+                <span class="status-label">SLOW-LANE GNN: CACHED</span>
+            </div>
+        </header>
+
+        <!-- Dashboard Stats Grid -->
+        <section class="stats-grid">
+            <div class="stat-card" id="card-total">
+                <div class="stat-icon total"></div>
+                <div class="stat-info">
+                    <span class="stat-label">Total Evaluated</span>
+                    <h2 class="stat-val" id="val-total">0</h2>
+                </div>
+            </div>
+            <div class="stat-card" id="card-allowed">
+                <div class="stat-icon allowed"></div>
+                <div class="stat-info">
+                    <span class="stat-label">Allowed (Safe)</span>
+                    <h2 class="stat-val text-green" id="val-allowed">0</h2>
+                </div>
+            </div>
+            <div class="stat-card" id="card-stepup">
+                <div class="stat-icon stepup"></div>
+                <div class="stat-info">
+                    <span class="stat-label">Step-Up (MFA)</span>
+                    <h2 class="stat-val text-yellow" id="val-stepup">0</h2>
+                </div>
+            </div>
+            <div class="stat-card" id="card-blocked">
+                <div class="stat-icon blocked"></div>
+                <div class="stat-info">
+                    <span class="stat-label">Blocked (Fraud)</span>
+                    <h2 class="stat-val text-red" id="val-blocked">0</h2>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content Area -->
+        <main class="dashboard-body">
+            <!-- Left Panel: Live Stream & Incident Reports -->
+            <div class="body-left">
+                <div class="panel-header">
+                    <h2>Live Ingestion Activity</h2>
+                    <span class="pulse-tag"><span class="pulse-dot"></span>Streaming Feed</span>
+                </div>
+                <div class="transaction-list-container">
+                    <table class="transaction-table">
+                        <thead>
+                            <tr>
+                                <th>Account</th>
+                                <th>Amount</th>
+                                <th>Geolocation</th>
+                                <th>Device ID</th>
+                                <th>Trust</th>
+                                <th>Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody id="transaction-feed">
+                            <!-- Injected dynamically -->
+                            <tr class="placeholder-row">
+                                <td colspan="6">Waiting for transaction stream... Start the stream simulation.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Right Panel: Visual Meter & Explainability -->
+            <div class="body-right">
+                <!-- Trust Score Gauge -->
+                <div class="visual-panel gauge-panel">
+                    <h3>Average Account Trust Score</h3>
+                    <div class="gauge-container">
+                        <svg class="gauge-svg" viewBox="0 0 100 100">
+                            <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                            <circle class="gauge-fill" id="gauge-fill-arc" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                        </svg>
+                        <div class="gauge-text-overlay">
+                            <span class="gauge-score" id="average-score">95</span>
+                            <span class="gauge-label">TRUST INDEX</span>
+                        </div>
+                    </div>
+                    <p class="gauge-description">Dynamically computed using XGBoost (ONNX) probability + GraphSAGE neighborhood risk embeddings.</p>
+                </div>
+
+                <!-- AI Case File Explainer -->
+                <div class="visual-panel case-explainer">
+                    <h3>AI-Generated Case File</h3>
+                    <div class="case-card">
+                        <div class="case-header">
+                            <span class="case-id" id="active-case-id">CASE #------</span>
+                            <span class="case-status-badge" id="active-case-status">NO ACTIVE RISK</span>
+                        </div>
+                        <div class="case-content">
+                            <div class="case-metric-row">
+                                <span>Fast-Lane XGBoost risk:</span>
+                                <strong id="case-xgb">0.0%</strong>
+                            </div>
+                            <div class="case-metric-row">
+                                <span>Slow-Lane GNN proximity risk:</span>
+                                <strong id="case-gnn">0.0%</strong>
+                            </div>
+                            <div class="case-metric-row">
+                                <span>Biometric consistency:</span>
+                                <strong id="case-bio">100.0%</strong>
+                            </div>
+                            <div class="divider"></div>
+                            <p class="case-narrative" id="case-narrative">No anomalous behaviors detected in this session. System is operating under secure baseline criteria.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Red Team vs. Blue Team Controller -->
+                <div class="visual-panel red-blue-panel">
+                    <h3>Active Defense Loop</h3>
+                    <p class="panel-desc">Launch Red Team adversarial attacks (amount splitting, spoofing) to test detection gaps and automatically patch models.</p>
+                    <div class="red-blue-stats">
+                        <div class="rb-stat">
+                            <span class="rb-label">Before Retrain</span>
+                            <strong id="rb-before">--</strong>
+                        </div>
+                        <div class="rb-stat arrow-stat">➔</div>
+                        <div class="rb-stat">
+                            <span class="rb-label">After Retrain</span>
+                            <strong class="text-green" id="rb-after">--</strong>
+                        </div>
+                    </div>
+                    <button class="btn-action" id="btn-run-simulation">Launch Adversarial Simulation</button>
+                    <div class="simulation-loading" id="simulation-loading" style="display: none;">
+                        <span class="spinner"></span> Running adversarial attacks & retraining...
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

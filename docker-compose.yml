@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # Redis - Fast lane feature store
+  redis:
+    image: redis:alpine
+    container_name: fraud-shield-redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  # Redpanda - Event ingestion (Kafka compatible)
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:v23.2.1
+    container_name: fraud-shield-redpanda
+    command:
+      - redpanda start
+      - --smp 1
+      - --empty
+      - --overprovisioned
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+
+  # Memgraph - Graph database for Slow lane
+  memgraph:
+    image: memgraph/memgraph-platform:latest
+    container_name: fraud-shield-memgraph
+    ports:
+      - "7687:7687"
+      - "3000:3000" # Memgraph Lab web UI
+    environment:
+      - MEMGRAPH_USER=memgraph
+      - MEMGRAPH_PASSWORD=memgraph
+    restart: always

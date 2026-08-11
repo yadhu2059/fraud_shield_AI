@@ -33,6 +33,13 @@ explainer = ExplainerLayer(xgb_model=fast_ensemble.xgb_pickle)
 RECENT_TRANSACTIONS = []
 GNN_SCORES_CACHE = {} # Map of username -> GNN risk score
 TRUST_SCORES_DYNAMIC = {} # In-memory profile to track credit-score like trust levels
+CUMULATIVE_STATS = {
+    "total": 0,
+    "allowed": 0,
+    "step_up": 0,
+    "flagged": 0,
+    "blocked": 0
+}
 
 GNN_METADATA_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "gnn_metadata.pkl"))
 
@@ -197,6 +204,17 @@ def process_transaction(tx: TransactionPayload):
     else:
         decision = "BLOCK"   # Instant rejection
 
+    # Update cumulative statistics
+    CUMULATIVE_STATS["total"] += 1
+    if decision == "ALLOW":
+        CUMULATIVE_STATS["allowed"] += 1
+    elif decision == "STEP_UP":
+        CUMULATIVE_STATS["step_up"] += 1
+    elif decision == "FLAG":
+        CUMULATIVE_STATS["flagged"] += 1
+    elif decision == "BLOCK":
+        CUMULATIVE_STATS["blocked"] += 1
+
     # 8. SHAP Explainability
     reason = explainer.explain_transaction(
         amount=tx.amount,
@@ -236,23 +254,17 @@ def get_dashboard_stats():
     """
     Returns statistics and logs for the frontend monitoring system.
     """
-    total = len(RECENT_TRANSACTIONS)
-    blocked = sum(1 for tx in RECENT_TRANSACTIONS if tx["decision"] == "BLOCK")
-    step_up = sum(1 for tx in RECENT_TRANSACTIONS if tx["decision"] == "STEP_UP")
-    flagged = sum(1 for tx in RECENT_TRANSACTIONS if tx["decision"] == "FLAG")
-    allowed = sum(1 for tx in RECENT_TRANSACTIONS if tx["decision"] == "ALLOW")
-    
     # Calculate average trust score
     avg_trust = np.mean([tx["trust_score"] for tx in RECENT_TRANSACTIONS]) if RECENT_TRANSACTIONS else 95.0
     
     return {
         "recent_transactions": RECENT_TRANSACTIONS,
         "stats": {
-            "total_transactions": total,
-            "blocked_count": blocked,
-            "step_up_count": step_up,
-            "flagged_count": flagged,
-            "allowed_count": allowed,
+            "total_transactions": CUMULATIVE_STATS["total"],
+            "blocked_count": CUMULATIVE_STATS["blocked"] + CUMULATIVE_STATS["flagged"],
+            "step_up_count": CUMULATIVE_STATS["step_up"],
+            "flagged_count": CUMULATIVE_STATS["flagged"],
+            "allowed_count": CUMULATIVE_STATS["allowed"],
             "average_trust_score": float(avg_trust)
         }
     }

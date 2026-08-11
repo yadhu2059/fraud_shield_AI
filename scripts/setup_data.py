@@ -38,7 +38,7 @@ def download_dataset():
         print("To download the dataset automatically, please place your 'kaggle.json' file in:")
         print(f"  {kaggle_config_dir}")
         print("\nAlternatively, download the PaySim dataset manually:")
-        print("  1. Go to: https://www.kaggle.com/datasets/ntnu-testimon/paysim1")
+        print("  1. Go to: https://www.kaggle.com/datasets/ealaxi/paysim1")
         print("  2. Click 'Download' (approx. 178MB zip file).")
         print(f"  3. Save the zip file as 'paysim1.zip' directly inside the data folder:")
         print(f"     {DATA_DIR}")
@@ -57,7 +57,7 @@ def download_dataset():
         # We invoke the kaggle CLI tool via subprocess
         subprocess.run([
             "kaggle", "datasets", "download", 
-            "-d", "ntnu-testimon/paysim1", 
+            "-d", "ealaxi/paysim1", 
             "-p", DATA_DIR, 
             "--unzip"
         ], check=True)

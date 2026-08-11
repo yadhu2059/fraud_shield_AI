@@ -20,27 +20,13 @@ MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "model
 
 def load_data_and_preprocess(num_rows=200000):
     if not os.path.exists(CSV_PATH):
-        print(f"[!] Kaggle dataset CSV not found at {CSV_PATH}.")
-        print("[*] Generating synthetic transaction backup to compile base models...")
-        np.random.seed(42)
-        num_synthetic = 10000
-        accounts = [f"C{np.random.randint(1000, 1500)}" for _ in range(num_synthetic)]
-        dests = [f"C{np.random.randint(2000, 2500)}" for _ in range(num_synthetic)]
-        amounts = np.random.exponential(scale=200.0, size=num_synthetic)
-        is_fraud = np.random.choice([0, 1], size=num_synthetic, p=[0.99, 0.01])
-        amounts = np.where(is_fraud == 1, amounts * 15.0, amounts)
-        
-        df = pd.DataFrame({
-            "step": np.random.randint(1, 100, size=num_synthetic),
-            "type": np.random.choice(["TRANSFER", "CASH_OUT", "PAYMENT"], size=num_synthetic),
-            "amount": amounts,
-            "nameOrig": accounts,
-            "nameDest": dests,
-            "isFraud": is_fraud
-        })
-    else:
-        print(f"[*] Loading first {num_rows} records from {CSV_PATH}...")
-        df = pd.read_csv(CSV_PATH, nrows=num_rows)
+        raise FileNotFoundError(
+            f"Kaggle dataset CSV not found at: {CSV_PATH}. "
+            "Please run 'python scripts/setup_data.py' or place 'paysim1.zip' manually in the 'data' folder first."
+        )
+    
+    print(f"[*] Loading first {num_rows} records from {CSV_PATH}...")
+    df = pd.read_csv(CSV_PATH, nrows=num_rows)
     
     # Feature Engineering
     print("[*] Performing feature engineering...")

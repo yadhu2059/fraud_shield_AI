@@ -1,5 +1,6 @@
 import time
 import math
+import json
 
 # Try importing redis
 try:
@@ -137,4 +138,3 @@ def calculate_haversine_distance(lat1, lon1, lat2, lon2):
     c = 2 * math.asin(math.sqrt(a))
     
     return R * c
-import json

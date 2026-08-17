@@ -6,7 +6,9 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def run_script(script_path):
     print(f"\n[*] Running: {os.path.basename(script_path)}...")
-    result = subprocess.run([sys.executable, script_path], cwd=ROOT_DIR)
+    env = os.environ.copy()
+    env["PYTHONPATH"] = ROOT_DIR + (os.pathsep + env.get("PYTHONPATH", "") if env.get("PYTHONPATH") else "")
+    result = subprocess.run([sys.executable, script_path], cwd=ROOT_DIR, env=env)
     if result.returncode != 0:
         print(f"[-] Error: {os.path.basename(script_path)} failed with exit code {result.returncode}")
         return False

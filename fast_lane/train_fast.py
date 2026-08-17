@@ -112,9 +112,12 @@ def train_models():
     
     # Save XGBoost
     xgb_path = os.path.join(MODEL_DIR, "xgb_model.pkl")
+    xgb_base_path = os.path.join(MODEL_DIR, "xgb_model_base.pkl")
     with open(xgb_path, "wb") as f:
         pickle.dump(xgb_model, f)
-    print(f"[+] XGBoost saved to {xgb_path}")
+    with open(xgb_base_path, "wb") as f:
+        pickle.dump(xgb_model, f)
+    print(f"[+] XGBoost saved to {xgb_path} and {xgb_base_path}")
 
     # 2. Train Isolation Forest (unsupervised anomaly detection)
     print("[*] Training Isolation Forest...")

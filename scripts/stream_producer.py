@@ -53,9 +53,9 @@ def get_simulated_features(name_orig):
         lat = user_lat + random.uniform(-0.005, 0.005)
         lng = user_lng + random.uniform(-0.005, 0.005)
         
-    # 3. Biometrics variation: typing speed fluctuates naturally between 0.45 and 0.99
+    # 3. Biometrics variation: typing speed fluctuates naturally between 0.70 and 0.99
     # (Sometimes they type a bit slower or are momentarily distracted)
-    biometric_score = random.uniform(0.45, 0.99)
+    biometric_score = random.uniform(0.70, 0.99)
     
     return {
         "device_id": device_id,
@@ -123,107 +123,79 @@ def main():
         elif normal_idx < len(normal_pool):
             mixed_transactions.append(normal_pool[normal_idx])
             normal_idx += 1
-            
-    # Stream the mixed transactions
-    for count, row in enumerate(mixed_transactions):
-        payload = {
-            "step": int(row["step"]),
-            "type": row["type"],
-            "amount": float(row["amount"]),
-            "nameOrig": row["nameOrig"],
-            "oldbalanceOrg": float(row["oldbalanceOrg"]),
-            "newbalanceOrig": float(row["newbalanceOrig"]),
-            "nameDest": row["nameDest"],
-            "oldbalanceDest": float(row["oldbalanceDest"]),
-            "newbalanceDest": float(row["newbalanceDest"]),
-            "isFraud": int(row["isFraud"]),
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        
-        # Enrich with behavioral/device metadata
-        if payload["isFraud"] == 1:
-            # Fraud gets anomalous biometrics, device switches, and travel anomaly
-            payload.update({
-                "device_id": f"dev_fraud_{random.randint(100, 999)}",
-                "os": random.choice(["Android", "Windows", "iOS"]),
-                "browser": "Chrome",
-                "latitude": 28.6139 + random.uniform(5.0, 15.0),  # Impossible travel distance
-                "longitude": 77.2090 + random.uniform(5.0, 15.0),
-                "biometric_score": random.uniform(0.05, 0.35),  # Bot-like speed/anomalous typing
-                "ip_address": f"10.20.30.{random.randint(1, 255)}"
-            })
-        else:
-            metadata = get_simulated_features(payload["nameOrig"])
-            payload.update(metadata)
-            
-        # Streaming implementation
-        if producer:
-            try:
-                producer.send('transactions', payload)
-                print(f"[Stream] Sent Tx from {payload['nameOrig']} to {payload['nameDest']} (Amount: {payload['amount']})")
-            except Exception as e:
-                print(f"[-] Stream send failed: {e}. Retrying via API...")
-                post_to_api(payload)
-        else:
-            post_to_api(payload)
-            
-        time.sleep(0.8)  # Sleep 800ms between transactions
-        
-    print(f"[+] Successfully simulated {len(mixed_transactions)} mixed transactions.")
 
-def run_synthetic_stream(producer):
-    count = 0
+    print("[*] Entering continuous transaction stream loop...")
+    count_global = 0
+    
     while True:
-        # Simulate active transaction metrics
-        is_fraud = 1 if (count > 0 and count % 8 == 0) else 0
-        amount = random.uniform(10.0, 800.0) if is_fraud == 0 else random.uniform(6000.0, 15000.0)
-        
-        name_orig = f"C{random.randint(1000, 1500)}"
-        name_dest = f"C{random.randint(2000, 2500)}"
-        
-        payload = {
-            "step": count // 10 + 1,
-            "type": random.choice(["TRANSFER", "CASH_OUT", "PAYMENT"]),
-            "amount": amount,
-            "nameOrig": name_orig,
-            "oldbalanceOrg": random.uniform(1000, 50000),
-            "newbalanceOrig": 0.0,
-            "nameDest": name_dest,
-            "oldbalanceDest": random.uniform(0, 10000),
-            "newbalanceDest": 0.0,
-            "isFraud": is_fraud,
-            "timestamp": datetime.utcnow().isoformat()
-        }
-        
-        # Enrich with biometrics & device/location
-        # Fraud gets anomalous biometrics and device switches
-        if is_fraud:
-            # Trigger device switch & fast typing (bot-like)
-            payload.update({
-                "device_id": f"dev_new_{random.randint(100, 999)}",
-                "os": random.choice(["Android", "Windows"]),
-                "browser": "Chrome",
-                "latitude": 28.6139 + random.uniform(2.0, 10.0), # Impossible travel distance
-                "longitude": 77.2090 + random.uniform(2.0, 10.0),
-                "biometric_score": random.uniform(0.1, 0.35), # Bot-like anomaly
-                "ip_address": f"10.20.30.{random.randint(1, 255)}"
-            })
-        else:
-            metadata = get_simulated_features(name_orig)
-            payload.update(metadata)
+        # Loop over the mixed transaction pool infinitely
+        for row in mixed_transactions:
+            payload = {
+                "step": int(row["step"]),
+                "type": row["type"],
+                "amount": float(row["amount"]),
+                "nameOrig": row["nameOrig"],
+                "oldbalanceOrg": float(row["oldbalanceOrg"]),
+                "newbalanceOrig": float(row["newbalanceOrig"]),
+                "nameDest": row["nameDest"],
+                "oldbalanceDest": float(row["oldbalanceDest"]),
+                "newbalanceDest": float(row["newbalanceDest"]),
+                "isFraud": int(row["isFraud"]),
+                "timestamp": datetime.utcnow().isoformat()
+            }
             
-        if producer:
-            try:
-                producer.send('transactions', payload)
-                print(f"[Stream] Sent Tx from {payload['nameOrig']} to {payload['nameDest']} (Amount: {payload['amount']})")
-            except Exception as e:
+            # Enrich with behavioral/device metadata
+            # Multi-account fraud rings pattern:
+            # Inject a device-sharing fraud ring every 25 transactions
+            if count_global > 0 and count_global % 25 == 0:
+                mule_dest = "C_MULE_RING_99"
+                shared_device = "dev_mule_ring_fingerprint"
+                payload.update({
+                    "nameOrig": f"C_RING_MEMBER_{random.randint(1, 5)}",
+                    "nameDest": mule_dest,
+                    "device_id": shared_device,
+                    "os": "Android",
+                    "browser": "Chrome",
+                    "latitude": 28.6139,
+                    "longitude": 77.2090,
+                    "biometric_score": 0.15,  # Bot typing speed
+                    "ip_address": "192.168.99.99",
+                    "isFraud": 1
+                })
+                print("[!] Injected Mule-Ring node pattern (device sharing + multi-source hub) into stream.")
+            elif payload["isFraud"] == 1:
+                # Fraud gets anomalous biometrics, device switches, and travel anomaly
+                payload.update({
+                    "device_id": f"dev_fraud_{random.randint(100, 999)}",
+                    "os": random.choice(["Android", "Windows", "iOS"]),
+                    "browser": "Chrome",
+                    "latitude": 28.6139 + random.uniform(5.0, 15.0),  # Impossible travel distance
+                    "longitude": 77.2090 + random.uniform(5.0, 15.0),
+                    "biometric_score": random.uniform(0.05, 0.35),  # Bot-like speed/anomalous typing
+                    "ip_address": f"10.20.30.{random.randint(1, 255)}"
+                })
+            else:
+                metadata = get_simulated_features(payload["nameOrig"])
+                # Occasional travel patterns (5%) and bot-biometrics (5%) on normal accounts
+                if random.random() < 0.05:
+                    metadata["latitude"] = 28.6139 + random.uniform(5.0, 15.0)
+                    metadata["longitude"] = 77.2090 + random.uniform(5.0, 15.0)
+                if random.random() < 0.05:
+                    metadata["biometric_score"] = random.uniform(0.05, 0.35)
+                payload.update(metadata)
+                
+            # Stream payload
+            if producer:
+                try:
+                    producer.send('transactions', payload)
+                    print(f"[Stream] Sent Tx from {payload['nameOrig']} to {payload['nameDest']} (Amount: {payload['amount']})")
+                except Exception as e:
+                    post_to_api(payload)
+            else:
                 post_to_api(payload)
-        else:
-            post_to_api(payload)
-            
-        count += 1
-        time.sleep(0.8) # Wait 800ms
-
+                
+            count_global += 1
+            time.sleep(1.0)  # Wait 1 second between transactions
 
 def post_to_api(payload):
     try:

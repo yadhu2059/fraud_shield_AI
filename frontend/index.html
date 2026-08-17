@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="style.css">
     <!-- Cytoscape.js CDN for Network Graph Visualization -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.26.0/cytoscape.min.js"></script>
+    <!-- Vis-network CDN for Interactive Network Graph -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.9/standalone/umd/vis-network.min.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -22,17 +24,25 @@
                     <p class="subtitle">REAL-TIME RISK DEFENSE ENGINE</p>
                 </div>
             </div>
+            
+            <nav class="header-nav">
+                <button class="nav-btn active" data-view="dashboard">Dashboard</button>
+                <button class="nav-btn" data-view="graph">Fraud Network</button>
+            </nav>
+            
             <div class="system-status">
-                <span class="status-indicator online"></span>
-                <span class="status-label">FAST-LANE ONNX: ONLINE (sub-10ms)</span>
+                <span class="status-indicator online" id="status-onnx-dot"></span>
+                <span class="status-label" id="status-onnx-label">FAST-LANE ONNX: ONLINE (sub-10ms)</span>
                 <span class="status-divider">|</span>
-                <span class="status-indicator online"></span>
-                <span class="status-label">SLOW-LANE GNN: CACHED</span>
+                <span class="status-indicator online" id="status-gnn-dot"></span>
+                <span class="status-label" id="status-gnn-label">SLOW-LANE GNN: CACHED</span>
             </div>
         </header>
 
-        <!-- Dashboard Stats Grid -->
-        <section class="stats-grid">
+        <!-- view-dashboard Wrapper -->
+        <div id="view-dashboard" class="view-section">
+            <!-- Dashboard Stats Grid -->
+            <section class="stats-grid">
             <div class="stat-card" id="card-total">
                 <div class="stat-icon total"></div>
                 <div class="stat-info">
@@ -75,10 +85,12 @@
                     <table class="transaction-table">
                         <thead>
                             <tr>
-                                <th>Account</th>
+                                <th>Source</th>
+                                <th>Destination</th>
                                 <th>Amount</th>
                                 <th>Geolocation</th>
                                 <th>Device ID</th>
+                                <th>IP Address</th>
                                 <th>Trust</th>
                                 <th>Decision</th>
                             </tr>
@@ -95,45 +107,70 @@
 
             <!-- Right Panel: Visual Meter & Explainability -->
             <div class="body-right">
-                <!-- Trust Score Gauge -->
-                <div class="visual-panel gauge-panel">
-                    <h3>Average Account Trust Score</h3>
-                    <div class="gauge-container">
-                        <svg class="gauge-svg" viewBox="0 0 100 100">
-                            <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
-                            <circle class="gauge-fill" id="gauge-fill-arc" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
-                        </svg>
-                        <div class="gauge-text-overlay">
-                            <span class="gauge-score" id="average-score">95</span>
-                            <span class="gauge-label">TRUST INDEX</span>
+                <!-- Combined Risk & Case Analysis Panel -->
+                <div class="visual-panel analysis-panel">
+                    <h3>Risk & Case File Analysis</h3>
+                    <div class="analysis-container">
+                        <!-- Left: Trust Score Gauge -->
+                        <div class="gauge-sub-panel">
+                            <div class="gauge-container">
+                                <svg class="gauge-svg" viewBox="0 0 100 100">
+                                    <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                                    <circle class="gauge-fill" id="gauge-fill-arc" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="251.2"></circle>
+                                </svg>
+                                <div class="gauge-text-overlay">
+                                    <span class="gauge-score" id="average-score">95</span>
+                                    <span class="gauge-label">TRUST</span>
+                                </div>
+                            </div>
+                            <span class="gauge-sub-desc">Ensemble Index</span>
+                        </div>
+                        
+                        <!-- Right: AI Case File -->
+                        <div class="case-card">
+                            <div class="case-header">
+                                <span class="case-id" id="active-case-id">CASE #------</span>
+                                <span class="case-status-badge" id="active-case-status">NO ACTIVE RISK</span>
+                            </div>
+                            <div class="case-content">
+                                <div class="case-metrics-list">
+                                    <div class="case-metric-row">
+                                        <span>Destination:</span>
+                                        <strong id="case-dest">N/A</strong>
+                                    </div>
+                                    <div class="case-metric-row">
+                                        <span>IP Address:</span>
+                                        <strong id="case-ip">0.0.0.0</strong>
+                                    </div>
+                                    <div class="case-metric-row">
+                                        <span>XGBoost Risk:</span>
+                                        <strong id="case-xgb">0.0%</strong>
+                                    </div>
+                                    <div class="case-metric-row">
+                                        <span>GNN Proximity:</span>
+                                        <strong id="case-gnn">0.0%</strong>
+                                    </div>
+                                    <div class="case-metric-row">
+                                        <span>Anomaly (IF):</span>
+                                        <strong id="case-if-anomaly" class="badge-if">SAFE</strong>
+                                    </div>
+                                    <div class="case-metric-row">
+                                        <span>Biometrics:</span>
+                                        <strong id="case-bio">100.0%</strong>
+                                    </div>
+                                </div>
+                                <div class="divider"></div>
+                                <p class="case-narrative" id="case-narrative">No anomalous behaviors detected in this session. Operating under secure baseline criteria.</p>
+                            </div>
                         </div>
                     </div>
-                    <p class="gauge-description">Dynamically computed using XGBoost (ONNX) probability + GraphSAGE neighborhood risk embeddings.</p>
-                </div>
-
-                <!-- AI Case File Explainer -->
-                <div class="visual-panel case-explainer">
-                    <h3>AI-Generated Case File</h3>
-                    <div class="case-card">
-                        <div class="case-header">
-                            <span class="case-id" id="active-case-id">CASE #------</span>
-                            <span class="case-status-badge" id="active-case-status">NO ACTIVE RISK</span>
-                        </div>
-                        <div class="case-content">
-                            <div class="case-metric-row">
-                                <span>Fast-Lane XGBoost risk:</span>
-                                <strong id="case-xgb">0.0%</strong>
-                            </div>
-                            <div class="case-metric-row">
-                                <span>Slow-Lane GNN proximity risk:</span>
-                                <strong id="case-gnn">0.0%</strong>
-                            </div>
-                            <div class="case-metric-row">
-                                <span>Biometric consistency:</span>
-                                <strong id="case-bio">100.0%</strong>
-                            </div>
-                            <div class="divider"></div>
-                            <p class="case-narrative" id="case-narrative">No anomalous behaviors detected in this session. System is operating under secure baseline criteria.</p>
+                    
+                    <!-- SHAP Bar Breakdown -->
+                    <div class="divider" style="margin-top: 15px; margin-bottom: 12px;"></div>
+                    <div class="shap-bar-container" style="margin-top: 0;">
+                        <h4>SHAP Risk Contribution Drivers</h4>
+                        <div id="shap-bars">
+                            <!-- Dynamic SHAP contribution bars will be inserted here -->
                         </div>
                     </div>
                 </div>
@@ -142,7 +179,13 @@
                 <div class="visual-panel graph-panel">
                     <h3>Account Network Proximity</h3>
                     <p class="panel-desc">Visualizes accounts and devices connected to this user. Detects rings or shared credentials.</p>
-                    <div id="cy" style="width: 100%; height: 250px; background-color: #111827; border-radius: 8px; border: 1px solid #1f2937; margin-top: 10px;"></div>
+                    <div class="graph-legend">
+                        <div class="legend-item"><span class="legend-dot legend-green"></span>Safe Account</div>
+                        <div class="legend-item"><span class="legend-dot legend-red"></span>Fraud Account</div>
+                        <div class="legend-item"><span class="legend-dot legend-purple"></span>Device</div>
+                        <div class="legend-item"><span class="legend-line legend-red-line"></span>Fraud Transfer</div>
+                    </div>
+                    <div id="cy" style="width: 100%; height: 220px; background-color: #111827; border-radius: 8px; border: 1px solid #1f2937; margin-top: 10px;"></div>
                 </div>
 
                 <!-- Red Team vs. Blue Team Controller -->
@@ -164,9 +207,59 @@
                     <div class="simulation-loading" id="simulation-loading" style="display: none;">
                         <span class="spinner"></span> Running adversarial attacks & retraining...
                     </div>
+                    
+                    <!-- Terminal Console Log Viewer -->
+                    <div class="terminal-container" id="terminal-container" style="display: none; margin-top: 15px;">
+                        <div class="terminal-header">
+                            <span class="terminal-title">Active Defense Logs</span>
+                            <span class="terminal-controls">
+                                <span class="dot-c green"></span>
+                                <span class="dot-c yellow"></span>
+                                <span class="dot-c red"></span>
+                            </span>
+                        </div>
+                        <div class="terminal-body" id="terminal-logs">
+                            Simulation ready. Awaiting trigger...
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
+        </div> <!-- End of view-dashboard -->
+
+        <!-- view-graph Wrapper -->
+        <div id="view-graph" class="view-section" style="display: none;">
+            <div class="visual-panel" style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="panel-header">
+                    <h2>Interactive Fraud Network Explorer</h2>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <input type="text" id="graph-search-input" placeholder="Search Account ID..." style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-family: 'JetBrains Mono', monospace; width: 220px;">
+                        <button id="btn-graph-search" class="nav-btn active" style="padding: 8px 16px;">Search</button>
+                        <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer;">
+                            <input type="checkbox" id="toggle-suspicious-only" style="cursor: pointer;">
+                            Show suspicious only
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Main Graph Canvas -->
+                <div id="fraud-network-graph" style="width: 100%; height: 500px; background-color: #0b0f19; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); position: relative;"></div>
+                
+                <!-- Legend and Info Panel -->
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.01); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);">
+                    <div class="graph-legend" style="display: flex; gap: 20px; flex-wrap: wrap; margin: 0;">
+                        <div class="legend-item"><span class="legend-dot" style="background: #1f77b4; border-radius: 50%;"></span>Account (Circle)</div>
+                        <div class="legend-item"><span class="legend-dot" style="background: #f58220; border-radius: 0%;"></span>Device (Square)</div>
+                        <div class="legend-item"><span class="legend-dot" style="background: #a855f7; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></span>IP Address (Diamond)</div>
+                        <div class="legend-item"><span class="legend-dot" style="background: #eab308; clip-path: polygon(50% 0%, 0% 100%, 100% 100%);"></span>Beneficiary (Triangle)</div>
+                        <div class="legend-item" style="display: flex; align-items: center; gap: 6px;">
+                            <span style="display: inline-block; width: 24px; height: 12px; background: linear-gradient(to right, #3b82f6, #ef4444); border-radius: 3px;"></span>
+                            Risk Level Gradient (Blue/Green: Safe ➔ Red: Critical)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="app.js"></script>
 </body>

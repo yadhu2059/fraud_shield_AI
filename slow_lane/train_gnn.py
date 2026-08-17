@@ -1,10 +1,18 @@
 import os
+import sys
+
+# Patch Python search path to include workspace root
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 import pickle
 from slow_lane.memgraph_client import MemgraphClient
+
 
 MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models"))
 GNN_MODEL_PATH = os.path.join(MODEL_DIR, "gnn_model.pth")

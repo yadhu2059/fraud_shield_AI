@@ -2,6 +2,7 @@ import os
 import time
 import pickle
 import numpy as np
+from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
@@ -309,4 +310,15 @@ def trigger_simulation():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Simulation failed: {e}")
+
+@app.get("/api/v1/graph/{account_id}")
+def get_graph_neighborhood(account_id: str):
+    """
+    Returns the graph neighborhood (nodes & edges) around a given account for UI visualization.
+    """
+    try:
+        data = db_client.get_neighborhood(account_id)
+        return data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch neighborhood for {account_id}: {e}")
 

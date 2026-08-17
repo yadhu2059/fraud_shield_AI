@@ -161,6 +161,87 @@ class MemgraphClient:
         
         return nodes, edges, node_labels
 
+    def get_neighborhood(self, account_id):
+        """
+        Retrieves the neighborhood (nodes and edges) connected to the specified account.
+        Returns:
+            nodes (list of dict): [{"id": "C123", "type": "Account"}, ...]
+            edges (list of dict): [{"source": "C123", "target": "C456", "type": "TRANSFERRED", "amount": 100.0, "is_fraud": 0}, ...]
+        """
+        nodes = []
+        edges = []
+        visited_nodes = set()
+
+        if not self.use_sqlite and self.driver:
+            # Query Memgraph
+            query = """
+            MATCH (s:Account {name: $account_id})-[r:TRANSFERRED]-(d:Account)
+            RETURN s.name as source, d.name as destination, r.amount as amount, r.is_fraud as is_fraud
+            """
+            try:
+                with self.driver.session() as session:
+                    results = session.run(query, account_id=account_id)
+                    for r in results:
+                        src, dest, amt, is_f = r["source"], r["destination"], r["amount"], r["is_fraud"]
+                        if src not in visited_nodes:
+                            nodes.append({"id": src, "type": "Account"})
+                            visited_nodes.add(src)
+                        if dest not in visited_nodes:
+                            nodes.append({"id": dest, "type": "Account"})
+                            visited_nodes.add(dest)
+                        edges.append({"source": src, "target": dest, "type": "TRANSFERRED", "amount": amt, "is_fraud": is_f})
+                
+                # Also get devices
+                query_dev = """
+                MATCH (s:Account {name: $account_id})-[r:USED_DEVICE]-(dev:Device)
+                RETURN s.name as account, dev.id as device_id
+                """
+                with self.driver.session() as session:
+                    results_dev = session.run(query_dev, account_id=account_id)
+                    for r in results_dev:
+                        acc, dev = r["account"], r["device_id"]
+                        if dev not in visited_nodes:
+                            nodes.append({"id": dev, "type": "Device"})
+                            visited_nodes.add(dev)
+                        edges.append({"source": acc, "target": dev, "type": "USED_DEVICE"})
+                return {"nodes": nodes, "edges": edges}
+            except Exception as e:
+                print(f"[-] Memgraph neighborhood query failed: {e}. Falling back to SQLite...")
+
+        # SQLite Fallback Path
+        cursor = self.conn.cursor()
+        
+        # Get transfers
+        cursor.execute("""
+            SELECT source, destination, amount, is_fraud FROM transfers 
+            WHERE source = ? OR destination = ?
+        """, (account_id, account_id))
+        rows = cursor.fetchall()
+        
+        for src, dest, amt, is_f in rows:
+            if src not in visited_nodes:
+                nodes.append({"id": src, "type": "Account"})
+                visited_nodes.add(src)
+            if dest not in visited_nodes:
+                nodes.append({"id": dest, "type": "Account"})
+                visited_nodes.add(dest)
+            edges.append({"source": src, "target": dest, "type": "TRANSFERRED", "amount": amt, "is_fraud": is_f})
+            
+        # Get device links
+        cursor.execute("SELECT account, device_id FROM device_links WHERE account = ?", (account_id,))
+        dev_rows = cursor.fetchall()
+        for acc, dev in dev_rows:
+            if dev not in visited_nodes:
+                nodes.append({"id": dev, "type": "Device"})
+                visited_nodes.add(dev)
+            edges.append({"source": acc, "target": dev, "type": "USED_DEVICE"})
+            
+        # If the account has no transactions yet, ensure it is in the node list
+        if account_id not in visited_nodes:
+            nodes.append({"id": account_id, "type": "Account"})
+            
+        return {"nodes": nodes, "edges": edges}
+
     def close(self):
         if self.driver:
             self.driver.close()

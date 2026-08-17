@@ -128,6 +128,97 @@ function updateActiveCaseDetails() {
     document.getElementById('case-gnn').innerText = `${(tx.gnn_risk * 100).toFixed(1)}%`;
     document.getElementById('case-bio').innerText = `${(tx.biometric_score * 100).toFixed(1)}%`;
     document.getElementById('case-narrative').innerText = tx.reason;
+
+    // Render the account graph neighborhood
+    renderNeighborhoodGraph(tx.account_id);
+}
+
+async function renderNeighborhoodGraph(accountId) {
+    try {
+        const response = await fetch(`${API_BASE}/graph/${accountId}`);
+        if (!response.ok) return;
+        const data = await response.json();
+        
+        const cyNodes = data.nodes.map(n => {
+            let color = '#3b82f6'; // Blue for regular Accounts
+            let shape = 'ellipse';
+            let label = n.id;
+            
+            if (n.id === accountId) {
+                color = '#ef4444'; // Red highlight for active account
+            } else if (n.type === 'Device') {
+                color = '#10b981'; // Green for Devices
+                shape = 'rectangle';
+                label = n.id.substring(0, 8);
+            }
+            
+            return {
+                data: { id: n.id, label: label, color: color, shape: shape }
+            };
+        });
+        
+        const cyEdges = data.edges.map((e, idx) => {
+            let color = '#4b5563'; // Gray edge
+            let label = '';
+            if (e.type === 'TRANSFERRED') {
+                color = e.is_fraud === 1 ? '#ef4444' : '#6b7280';
+                label = `$${e.amount.toLocaleString()}`;
+            } else if (e.type === 'USED_DEVICE') {
+                color = '#10b981';
+            }
+            return {
+                data: { id: `e_${idx}`, source: e.source, target: e.target, color: color, label: label }
+            };
+        });
+        
+        const elements = [...cyNodes, ...cyEdges];
+        
+        cytoscape({
+            container: document.getElementById('cy'),
+            elements: elements,
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'background-color': 'data(color)',
+                        'label': 'data(label)',
+                        'shape': 'data(shape)',
+                        'width': '20px',
+                        'height': '20px',
+                        'color': '#fff',
+                        'font-size': '8px',
+                        'text-valign': 'bottom',
+                        'text-margin-y': '4px'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 1.5,
+                        'line-color': 'data(color)',
+                        'target-arrow-color': 'data(color)',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'label': 'data(label)',
+                        'font-size': '6px',
+                        'color': '#9ca3af',
+                        'text-background-opacity': 0.7,
+                        'text-background-color': '#111827',
+                        'text-background-padding': '1px'
+                    }
+                }
+            ],
+            layout: {
+                name: 'cose',
+                animate: false,
+                fit: true,
+                padding: 15
+            }
+        });
+        
+    } catch (error) {
+        console.error("Failed to render neighborhood graph:", error);
+    }
 }
 
 async function runAdversarialSimulation() {

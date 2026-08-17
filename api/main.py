@@ -298,7 +298,7 @@ def process_transaction(tx: TransactionPayload):
     xgb_prob, if_anomaly = fast_ensemble.predict(
         amount=tx.amount,
         amount_to_avg_ratio=avg_ratio,
-        tx_count=history["total_tx_count"] + 1,
+        tx_count=history["total_tx_count"],
         geo_distance=geo_distance,
         is_new_device=is_new_device,
         biometric_score=tx.biometric_score

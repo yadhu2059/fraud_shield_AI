@@ -1,3 +1,30 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
 
+# Environments
+.env
+.venv
+env/
+venv/
+
+# Project configuration
+.idea/
+.vscode/
+
+# Local datasets, databases and caches
 data/paysim1.zip
 data/PS_20174392719_1491204439457_log.csv
+data/graph_fallback.db
+data/sqlite.db
+
+# Model checkpoints and weights
+models/
+
+# Frontend dependency directories
+node_modules/
+
+# Generated zip/pdf files
+product_code.zip
+documentation.pdf

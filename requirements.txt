@@ -9,3 +9,13 @@ redis>=4.0.0
 neo4j>=4.4.0
 shap>=0.40.0
 torch>=1.10.0
+
+# ONNX runtime acceleration (Optional fallback support)
+onnxruntime>=1.10.0
+onnxmltools>=1.10.0
+skl2onnx>=1.10.0
+
+# Dataset setup & utilities
+kaggle>=1.5.12
+fpdf2>=2.8.8
+
